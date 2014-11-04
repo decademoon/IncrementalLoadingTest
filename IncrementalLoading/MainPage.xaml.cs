@@ -88,10 +88,10 @@ namespace IncrementalLoading
             if (items == null)
             {
                 // simulate waiting for the network
-                await Task.Delay(1000);
+                //await Task.Delay(1000);
 
                 items = new List<string>();
-                for (var i = 0; i < 1000; i++)
+                for (var i = 0; i < 200; i++)
                     items.Add(i.ToString());
             }
 

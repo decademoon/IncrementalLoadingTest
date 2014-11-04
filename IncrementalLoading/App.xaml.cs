@@ -7,6 +7,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Phone.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -35,7 +36,17 @@ namespace IncrementalLoading
         {
             this.InitializeComponent();
             this.Suspending += this.OnSuspending;
-        }
+			HardwareButtons.BackPressed += HardwareButtons_BackPressed;
+		}
+
+		private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e) {
+			Frame rootFrame = Window.Current.Content as Frame;
+			if(rootFrame != null && rootFrame.CanGoBack) {
+				rootFrame.GoBack();
+				e.Handled = true;
+			}
+			else { return; }
+		}
 
         /// <summary>
         /// Invoked when the application is launched normally by the end user.  Other entry points
@@ -91,7 +102,7 @@ namespace IncrementalLoading
                 // When the navigation stack isn't restored navigate to the first page,
                 // configuring the new page by passing required information as a navigation
                 // parameter
-                if (!rootFrame.Navigate(typeof(MainPage), e.Arguments))
+                if (!rootFrame.Navigate(typeof(FirstPage), e.Arguments))
                 {
                     throw new Exception("Failed to create initial page");
                 }
