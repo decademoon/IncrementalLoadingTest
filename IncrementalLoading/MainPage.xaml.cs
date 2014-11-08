@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -48,32 +49,26 @@ namespace IncrementalLoading
         {
             var dispatcher = Window.Current.Dispatcher;
 
-            return Task.Run<LoadMoreItemsResult>(
-                async () =>
+            return AsyncInfo.Run(async cancel =>
+            {
+                var result = await source.GetPagedItems(currentPage++, itemsPerPage);
+                uint resultCount = (uint)(result == null ? 0 : result.Count());
+
+                if (resultCount == 0)
                 {
-                    uint resultCount = 0;
-                    var result = await source.GetPagedItems(currentPage++, itemsPerPage);
-
-                    if (result == null || result.Count() == 0)
+                    hasMoreItems = false;
+                }
+                else
+                {
+                    await Task.WhenAll(Task.Delay(10), dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        hasMoreItems = false;
-                    }
-                    else
-                    {
-                        resultCount = (uint)result.Count();
+                        foreach (I item in result)
+                            this.Add(item);
+                    }).AsTask());
+                }
 
-                        await dispatcher.RunAsync(
-                            CoreDispatcherPriority.Normal,
-                            () =>
-                            {
-                                foreach (I item in result)
-                                    this.Add(item);
-                            });
-                    }
-
-                    return new LoadMoreItemsResult() { Count = resultCount };
-
-                }).AsAsyncOperation<LoadMoreItemsResult>();
+                return new LoadMoreItemsResult() { Count = resultCount };   
+            });
         }
     }
 
@@ -91,15 +86,17 @@ namespace IncrementalLoading
                 //await Task.Delay(1000);
 
                 items = new List<string>();
-                for (var i = 0; i < 200; i++)
+                for (var i = 0; i < 1000; i++)
                     items.Add(i.ToString());
             }
 
-            return await Task.Run<IEnumerable<string>>(() =>
-            {
-                var result = (from p in items select p).Skip(pageIndex * pageSize).Take(pageSize);
-                return result;
-            });
+            //return await Task.Run<IEnumerable<string>>(() =>
+            //{
+            //    var result = (from p in items select p).Skip(pageIndex * pageSize).Take(pageSize);
+            //    return result;
+            //});
+
+            return items.Skip(pageIndex * pageSize).Take(pageSize);
         }
     }
 
